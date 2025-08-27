@@ -1,7 +1,6 @@
 import numpy as np
 from scipy import signal
 import matplotlib.dates as dates
-from .tools import num2dt64, Bunch
 
 def dbar2m(P,lat):
     """
