@@ -112,7 +112,7 @@ def dispr(h,freq):
 
     return kh,k
 
-def wave_energy_density(dep,dt,nperseg=None,noverlap=0,nsmooth=7,nfft=None):
+def wave_energy_density(dep,dt,nperseg=None,noverlap=0,nsmooth=7,nfft=None,fftmethod="fft"):
     """
     Estimates 1-D Wave Energy Density Spectrum from pressure time series.
 
@@ -151,9 +151,26 @@ def wave_energy_density(dep,dt,nperseg=None,noverlap=0,nsmooth=7,nfft=None):
     if nperseg == None:
         nperseg = len(dep)
     t_det = signal.detrend(dep)
-    ff, Spp = signal.welch(t_det, fs=fs, nperseg=nperseg, noverlap=noverlap,return_onesided=True,nfft=nfft)
-    ff = ff[1:]
-    Spp = Spp[1:]
+    if fftmethod == "fft":
+        nt = len(t_det)
+        npositive = nt//2
+        # Hanning Window
+        x = np.arange(nt, dtype=float)
+        phi = 2 * np.pi * x / nt
+        weights = 0.5 * (1 - np.cos(phi))
+
+        pslice = slice(1,npositive)
+        ff = np.arange(1,npositive)/(nt*dt)
+        ft = np.fft.fft(t_det*weights,n=nt)[pslice]
+        ft2 = np.abs(ft) ** 2
+        ft2 *=2 #accounts for energy in negative frequencies
+        psdnormfac = (dt/(weights**2).sum()) #normalization factor for window
+        Spp = ft2 * psdnormfac
+        
+    elif fftmethod == "welch":
+        ff, Spp = signal.welch(t_det, fs=fs, nperseg=nperseg, noverlap=noverlap,return_onesided=True,nfft=nfft)
+        ff = ff[1:]
+        Spp = Spp[1:]
     if nsmooth is not None:
         window = np.ones((nsmooth),dtype=float)/float(nsmooth)
         Spp = np.convolve(Spp,window,mode='valid')
