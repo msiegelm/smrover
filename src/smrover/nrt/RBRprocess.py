@@ -112,11 +112,11 @@ def dispr(h,freq):
 
     return kh,k
 
-def wave_energy_density(dep,dt,nperseg=None,noverlap=0,nsmooth=7,nfft=None,fftmethod="fft"):
+def wave_energy_density(dep,dt,nperseg=None,noverlap=0,nsmooth=7,nfft=None,fftmethod="fft",window=None):
     """
     Estimates 1-D Wave Energy Density Spectrum from pressure time series.
 
-    Boxcar smoothing is used to increase confidence in estimate.
+    Boxcar smoothing in frequency domain is used to increase confidence in estimate.
     Uses Welch's method to compute estimate of PSD.  By default, segment averaging turned off (nperseg = None).
 
     Parameters:
@@ -154,17 +154,23 @@ def wave_energy_density(dep,dt,nperseg=None,noverlap=0,nsmooth=7,nfft=None,fftme
     if fftmethod == "fft":
         nt = len(t_det)
         npositive = nt//2
-        # Hanning Window
-        x = np.arange(nt, dtype=float)
-        phi = 2 * np.pi * x / nt
-        weights = 0.5 * (1 - np.cos(phi))
 
         pslice = slice(1,npositive)
         ff = np.arange(1,npositive)/(nt*dt)
-        ft = np.fft.fft(t_det*weights,n=nt)[pslice]
+        if window == "hanning":
+            # Hanning Window
+            x = np.arange(nt, dtype=float)
+            phi = 2 * np.pi * x / nt
+            weights = 0.5 * (1 - np.cos(phi))
+            ft = np.fft.fft(t_det*weights,n=nt)[pslice]
+        elif window is None:
+            ft = np.fft.fft(t_det,n=nt)[pslice]
         ft2 = np.abs(ft) ** 2
         ft2 *=2 #accounts for energy in negative frequencies
-        psdnormfac = (dt/(weights**2).sum()) #normalization factor for window
+        if window is not None:
+            psdnormfac = (dt/(weights**2).sum()) #normalization factor for window
+        else:
+            psdnormfac = dt/nt
         Spp = ft2 * psdnormfac
         
     elif fftmethod == "welch":
@@ -172,9 +178,9 @@ def wave_energy_density(dep,dt,nperseg=None,noverlap=0,nsmooth=7,nfft=None,fftme
         ff = ff[1:]
         Spp = Spp[1:]
     if nsmooth is not None:
-        window = np.ones((nsmooth),dtype=float)/float(nsmooth)
-        Spp = np.convolve(Spp,window,mode='valid')
-        ff = np.convolve(ff,window,mode='valid')
+        wconv = np.ones((nsmooth),dtype=float)/float(nsmooth)
+        Spp = np.convolve(Spp,wconv,mode='valid')
+        ff = np.convolve(ff,wconv,mode='valid')
 
     h = np.nanmean(dep)
     kh, kk = dispr(h, ff)
