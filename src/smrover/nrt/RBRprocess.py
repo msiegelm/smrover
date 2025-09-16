@@ -209,6 +209,14 @@ def wave_energy_density(dep,dt,nperseg=None,noverlap=0,nsmooth=7,nfft=None,fftme
     print('Parseval check: var(dep) = %f, int(Spp df) = %f' % (out['varts'],out['trapzSpp']))
     return out
 
+
+def one_sided_freqs(N, fs):
+    # even N: 0..N/2 (includes Nyquist); odd N: 0..(N-1)/2
+    kmax = N//2
+    k = np.arange(0, kmax + 1)   # nonnegative bins only
+    f = k * fs / N
+    return k, f
+
 def calc_Hs(dep,dt,Tmin,Tmax,calcTp=False,cthresh=20):
     """
     Calculates significant wave height from bottom pressure time series.
