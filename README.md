@@ -7,4 +7,4 @@ Handles data processing and basic analysis of observations from Smart Mooring Ro
 3) pip install -e .
 
 ## Necessary packages
--numpy, pickle, xarray, matplotlib, scipy
+-numpy, pickle, xarray, matplotlib, scipy, RSK
